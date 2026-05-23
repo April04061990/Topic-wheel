@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>话题转盘 · 全分类 | 极简INS风</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: #f6f6f8;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            padding: 20px;
+        }
+
+        /* 极简卡片容器 */
+        .wheel-container {
+            max-width: 680px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 48px;
+            padding: 28px 24px 36px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.02), 0 0 0 1px rgba(0, 0, 0, 0.01);
+            transition: all 0.2s;
+        }
+
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            letter-spacing: -0.8px;
+            color: #111;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+        h1 small {
+            font-size: 0.7rem;
+            font-weight: 400;
+            background: #efefef;
+            color: #3a3a3a;
+            padding: 4px 14px;
+            border-radius: 60px;
+            font-family: monospace;
+        }
+        .sub {
+            font-size: 0.7rem;
+            color: #a0a0a0;
+            text-align: center;
+            border-top: 0.5px solid #ececec;
+            border-bottom: 0.5px solid #ececec;
+            display: inline-block;
+            width: auto;
+            padding: 8px 20px;
+            margin: 8px auto 20px;
+            letter-spacing: 1px;
+        }
+
+        /* 分类按钮胶囊组 */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .filter-btn {
+            background: #f4f4f6;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #2c2c2c;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            letter-spacing: 0.2px;
+        }
+        .filter-btn.active {
+            background: #1a1a1a;
+            color: white;
+        }
+        .filter-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* 转盘区域 */
+        .roulette-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            margin: 0 0 20px;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 20px 32px -12px rgba(0, 0, 0, 0.08), 0 0 0 1px #eaeaea inset, 0 0 0 6px #fcfcfc;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        canvas:active {
+            transform: scale(0.98);
+        }
+
+        /* 指针 */
+        .pointer {
+            position: absolute;
+            top: -28px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 24px solid transparent;
+            border-right: 24px solid transparent;
+            border-top: 52px solid #181818;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            z-index: 10;
+        }
+        .pointer::after {
+            content: "⚫";
+            position: absolute;
+            font-size: 18px;
+            top: -48px;
+            left: -10px;
+            color: white;
+        }
+
+        /* 话题展示区 */
+        .topic-main {
+            background: #ffffff;
+            border-radius: 40px;
+            margin: 16px 0 10px;
+            padding: 20px 16px;
+            border: 0.5px solid #efefef;
+        }
+        .category-badge {
+            display: inline-block;
+            background: #ececec;
+            color: #1f1f1f;
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 5px 16px;
+            border-radius: 40px;
+            letter-spacing: 0.5px;
+            margin-bottom: 14px;
+        }
+        .current-topic {
+            font-size: 1.7rem;
+            font-weight: 520;
+            color: #111;
+            line-height: 1.35;
+            margin: 8px 0 6px;
+            background: #ffffff;
+            padding: 6px 0;
+        }
+        .topic-eng {
+            font-size: 0.85rem;
+            color: #7c7c7c;
+            font-family: monospace;
+            border-top: 0.5px dashed #e2e2e2;
+            display: inline-block;
+            padding-top: 10px;
+            margin-top: 6px;
+        }
+
+        /* 洞察 + 延伸 */
+        .insight-card {
+            background: #fafafc;
+            border-radius: 32px;
+            padding: 18px 20px;
+            margin: 12px 0 8px;
+            text-align: left;
+            border-left: 3px solid #2c2c2c;
+        }
+        .insight-title {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            color: #5e5e5e;
+            margin-bottom: 10px;
+        }
+        .insight-text {
+            font-size: 0.88rem;
+            color: #222;
+            line-height: 1.48;
+            margin-bottom: 14px;
+        }
+        .followup-box {
+            background: white;
+            border-radius: 28px;
+            padding: 12px 16px;
+            margin-top: 8px;
+            border: 0.5px solid #eaeaea;
+        }
+        .followup-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #6c6c6c;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .followup-text {
+            font-size: 0.85rem;
+            color: #2b2b2b;
+            font-style: normal;
+            font-weight: 450;
+        }
+        .eng-note {
+            font-size: 0.72rem;
+            color: #9c9c9c;
+            margin-top: 8px;
+            border-top: 0.5px solid #ececec;
+            padding-top: 8px;
+        }
+
+        /* 按钮组 */
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 14px;
+            margin: 20px 0 8px;
+        }
+        button {
+            background: white;
+            border: 1px solid #d4d4d4;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 10px 26px;
+            border-radius: 48px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #1f1f1f;
+            font-family: inherit;
+        }
+        .spin-btn {
+            background: #181818;
+            border: 1px solid #181818;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+        .reset-btn {
+            background: #ffffff;
+        }
+        .spin-btn:active { transform: translateY(1px); background: #000; }
+        .reset-btn:active { transform: translateY(1px); background: #f5f5f5; }
+
+        .footer-note {
+            font-size: 0.6rem;
+            text-align: center;
+            color: #bcbcbc;
+            margin-top: 28px;
+            letter-spacing: 0.3px;
+        }
+        @media (max-width: 550px) {
+            .card { padding: 22px 18px 30px; }
+            .current-topic { font-size: 1.3rem; }
+            .filter-btn { padding: 6px 14px; font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="wheel-container">
+    <div class="card">
+        <h1>
+            🎡 话题转盘 
+            <small>talk roulette</small>
+        </h1>
+        <div class="sub">选择分类 · 全部话题 · 随心而谈</div>
+
+        <!-- 分类按钮：商业 / 职场 / 友情 / 爱情 / 深度 / 日常 (加上日常大类) -->
+        <div class="filter-bar" id="filterBar">
+            <button data-cat="all" class="filter-btn active">✨ 全部话题</button>
+            <button data-cat="business" class="filter-btn">💼 商业</button>
+            <button data-cat="career" class="filter-btn">📈 职场</button>
+            <button data-cat="friendship" class="filter-btn">🤝 友情</button>
+            <button data-cat="love" class="filter-btn">❤️ 爱情</button>
+            <button data-cat="deep" class="filter-btn">🌙 深度</button>
+            <button data-cat="daily" class="filter-btn">☕ 日常</button>
+        </div>
+
+        <div class="roulette-wrapper">
+            <canvas id="wheelCanvas" width="500" height="500" style="width:100%; max-width:500px; height:auto; aspect-ratio:1/1"></canvas>
+            <div class="pointer"></div>
+        </div>
+
+        <!-- 动态话题区 -->
+        <div class="topic-main">
+            <div class="category-badge" id="categoryLabel">ALL TOPICS</div>
+            <div class="current-topic" id="currentTopicText">点击转盘 开启对话</div>
+            <div class="topic-eng" id="currentTopicEng">tap the wheel to begin</div>
+        </div>
+
+        <!-- 洞察卡牌：了解对方 & 延伸话题 -->
+        <div class="insight-card">
+            <div class="insight-title">🔍 透过这个话题，可以了解对方什么？</div>
+            <div class="insight-text" id="insightText">价值观、思维模式与生活态度</div>
+            <div class="followup-box">
+                <div class="followup-label">💬 延伸话题 · 继续聊</div>
+                <div class="followup-text" id="followupText">“分享一个让你有所触动的故事吧”</div>
+                <div class="eng-note" id="insightEngNote">✨ what you learn + deeper questions</div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="spin-btn" id="spinBtn">◍ 旋转转盘 ◍</button>
+            <button class="reset-btn" id="resetBtn">⟳ 随机重置</button>
+        </div>
+        <div class="footer-note">⚫ 点击转盘或按钮 | 未选分类 = 全部话题 | 每个话题附带深度洞察+延伸</div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ======================= 丰富话题库 (六大分类：商业/职场/友情/爱情/深度/日常) =======================
+        // 每个分类都包含多个高质量中英文话题，附带 insight 和 followup
+        const TOPICS_DB = {
+            business: [   // 商业 · 创富 · 趋势
+                { zh: "如果你能创业，最想解决什么社会问题？", en: "If you could start a business, what problem would you solve?",
+                  insightZh: "了解使命感、商业敏锐度与价值取向。", insightEn: "Reveals purpose-driven mindset & market awareness.",
+                  followupZh: "你觉得什么是好生意的核心？利润还是影响力？" },
+                { zh: "你心中最成功的品牌是哪个？为什么？", en: "Which brand do you admire most and why?",
+                  insightZh: "看出品牌偏好、审美逻辑和对商业模式的欣赏点。", insightEn: "Shows brand perception & strategic thinking.",
+                  followupZh: "如果给那个品牌一个建议，你会说什么？" },
+                { zh: "你如何看待副业和多元化收入？", en: "What's your take on side hustles & multiple income streams?",
+                  insightZh: "反映财务安全感和野心，以及风险偏好。", insightEn: "Reflects financial mindset & risk tolerance.",
+                  followupZh: "你最近在关注哪个新兴行业？" },
+                { zh: "你认为未来三年最有潜力的行业是什么？", en: "Which industry will boom in the next 3 years?",
+                  insightZh: "观察趋势敏感度和前瞻思维。", insightEn: "Trend sensitivity & long-term vision.",
+                  followupZh: "如果有机会你会投入那个领域吗？" },
+                { zh: "你佩服的一位商业领袖是谁？为什么？", en: "Which business leader do you admire & why?",
+                  insightZh: "映射个人的领导力偏好与价值观。", insightEn: "Leadership preference & value alignment.",
+                  followupZh: "你从他身上学到最重要的品质是什么？" }
+            ],
+            career: [    // 职场 · 成长 · 领导力
+                { zh: "你工作中最骄傲的一个成就？", en: "What's a career achievement you're proud of?",
+                  insightZh: "了解职业驱动力和自我认可标准。", insightEn: "Core motivation & self-value at work.",
+                  followupZh: "那次经历如何改变了你的工作方式？" },
+                { zh: "你认为好的领导应该具备什么特质？", en: "What makes a great leader in your eyes?",
+                  insightZh: "折射出管理期望与职场价值观。", insightEn: "Leadership expectations & work culture fit.",
+                  followupZh: "你曾遇到过最敬佩的上司是怎样的？" },
+                { zh: "职场上，能力与情商哪个更重要？", en: "Competence or EQ — which matters more at work?",
+                  insightZh: "判断对软实力的重视程度，以及人际策略。", insightEn: "Values soft skills vs execution.",
+                  followupZh: "分享一次情商化解冲突的经历。" },
+                { zh: "你如何应对职业倦怠或瓶颈期？", en: "How do you deal with career burnout or plateaus?",
+                  insightZh: "抗压能力和自我调节机制。", insightEn: "Resilience & self-renewal strategies.",
+                  followupZh: "你通常会通过什么方式找回状态？" },
+                { zh: "你理想中的工作氛围是什么样的？", en: "Describe your ideal work atmosphere.",
+                  insightZh: "反映对协作、自由度及创造力的需要。", insightEn: "Needs for collaboration & autonomy.",
+                  followupZh: "你曾经待过最接近这种氛围的团队吗？" }
+            ],
+            friendship: [   // 友情 · 社交 · 陪伴
+                { zh: "你和最好的朋友之间最难忘的回忆？", en: "Most memorable moment with your best friend?",
+                  insightZh: "看出友谊深度和珍视的相处模式。", insightEn: "Friendship depth & emotional bonding style.",
+                  followupZh: "你认为友谊需要刻意经营吗？" },
+                { zh: "朋友难过时，你更愿意给建议还是陪伴？", en: "When a friend is down, advice or just be there?",
+                  insightZh: "反映共情方式和沟通风格。", insightEn: "Empathy pattern & emotional support.",
+                  followupZh: "你希望朋友怎么安慰你？" },
+                { zh: "你觉得成年后交朋友难在哪里？", en: "What makes it hard to make friends as an adult?",
+                  insightZh: "了解社交恐惧点和现实顾虑。", insightEn: "Social barriers & trust building.",
+                  followupZh: "你最近一次认识新朋友是什么场景？" },
+                { zh: "友谊中你最不能接受的行为？", en: "What's a friendship dealbreaker for you?",
+                  insightZh: "底线与边界感，对忠诚的要求。", insightEn: "Boundaries & loyalty expectations.",
+                  followupZh: "如果朋友不小心越界，你如何处理？" },
+                { zh: "你觉得朋友之间需要有共同爱好吗？", en: "Is shared hobby necessary for good friends?",
+                  insightZh: "探讨友谊维系的基础是共鸣还是互补。", insightEn: "Bonding factors: common interests vs differences.",
+                  followupZh: "你和朋友最不一样的兴趣是什么？" }
+            ],
+            love: [       // 爱情 · 亲密关系
+                { zh: "你心目中完美伴侣的三个特质？", en: "Three traits of an ideal partner?",
+                  insightZh: "优先级排序，情感需求画像。", insightEn: "Relationship priorities & emotional needs.",
+                  followupZh: "这些特质中哪一个最重要？" },
+                { zh: "爱情里，你更看重激情还是安全感？", en: "Passion or security — which do you value more?",
+                  insightZh: "依恋风格与长期关系倾向。", insightEn: "Attachment style & long-term orientation.",
+                  followupZh: "你认为两者能并存吗？怎么做？" },
+                { zh: "你处理冲突时通常会怎么做？", en: "How do you usually handle conflicts in a relationship?",
+                  insightZh: "沟通模式及情绪管理能力。", insightEn: "Conflict resolution & emotional maturity.",
+                  followupZh: "冷处理和激烈辩论哪个更有效？" },
+                { zh: "爱情和事业发生冲突，你更倾向如何平衡？", en: "Love vs career — how do you balance?",
+                  insightZh: "人生优先级与妥协意愿。", insightEn: "Life priorities & sacrifice readiness.",
+                  followupZh: "你见过身边最好的平衡案例吗？" },
+                { zh: "你相信一见钟情还是日久生情？", en: "Love at first sight or grow over time?",
+                  insightZh: "浪漫主义倾向及关系建立节奏。", insightEn: "Romantic orientation & relational pace.",
+                  followupZh: "哪种方式让你更安心？" }
+            ],
+            deep: [       // 深度 · 自我 · 哲学
+                { zh: "你人生中最重要的一个转折点是什么？", en: "What's been a major turning point in your life?",
+                  insightZh: "关键时刻和价值观形成的源头。", insightEn: "Life-altering moments & core beliefs.",
+                  followupZh: "如果重来你会改变那个决定吗？" },
+                { zh: "你如何定义“成功”？", en: "How do you define success?",
+                  insightZh: "深层动力与人生满足感来源。", insightEn: "Core definition of fulfillment.",
+                  followupZh: "五年后你希望自己变成什么样子？" },
+                { zh: "你最近一次质疑自己的信念是什么时候？", en: "When did you last question your own beliefs?",
+                  insightZh: "自我反思习惯与成长型思维。", insightEn: "Self-awareness & intellectual humility.",
+                  followupZh: "那段思考给你带来了什么变化？" },
+                { zh: "如果生命只剩一年，你会如何度过？", en: "If you had one year left, how would you live?",
+                  insightZh: "终极价值观和对当下的满意度。", insightEn: "Ultimate priorities & life satisfaction.",
+                  followupZh: "为什么这些事情对你最重要？" },
+                { zh: "你认为幸福更多是选择还是运气？", en: "Is happiness more about choice or luck?",
+                  insightZh: "对主观能动性的信任程度。", insightEn: "Locus of control & optimism.",
+                  followupZh: "你做过哪些让自己更幸福的小决定？" }
+            ],
+            daily: [      // 日常 · 生活 · 轻松破冰 (增加更多话题)
+                { zh: "你周末最喜欢如何放松？", en: "How do you like to unwind on weekends?",
+                  insightZh: "了解生活节奏和能量恢复方式。", insightEn: "Lifestyle rhythm & self-care habits.",
+                  followupZh: "最近尝试过什么新的放松方式吗？" },
+                { zh: "你最近看过最值得推荐的电影或剧集？", en: "A movie or show you recently loved?",
+                  insightZh: "审美偏好和情感共鸣点。", insightEn: "Taste in stories & emotional resonance.",
+                  followupZh: "哪个片段让你印象深刻？" },
+                { zh: "你早餐通常吃什么？", en: "What's your typical breakfast?",
+                  insightZh: "生活习惯与自律程度的小切角。", insightEn: "Daily routine & self-care.",
+                  followupZh: "你理想中的早餐是什么样？" },
+                { zh: "你最近学会的一项小技能？", en: "A small skill you've recently learned?",
+                  insightZh: "好奇心和学习动力。", insightEn: "Curiosity & growth mindset.",
+                  followupZh: "怎么想到要学这个的？" },
+                { zh: "你最喜欢哪个季节？为什么？", en: "Favorite season and why?",
+                  insightZh: "情感联结与个人偏好。", insightEn: "Emotional connection to environment.",
+                  followupZh: "这个季节里你最喜欢做的事？" },
+                { zh: "最近一次让你感到温暖的小事？", en: "A small warm moment you experienced lately?",
+                  insightZh: "对善意的敏感度与感恩心态。", insightEn: "Sensitivity to kindness & gratitude.",
+                  followupZh: "你有做过类似温暖别人的事吗？" },
+                { zh: "你理想中的周末一日游是怎样的？", en: "Describe your ideal weekend getaway.",
+                  insightZh: "探索欲和放松偏好。", insightEn: "Adventure vs relaxation balance.",
+                  followupZh: "你想和谁一起去？" },
+                { zh: "你目前最常用的一款app是什么？", en: "Which app do you use most these days?",
+                  insightZh: "生活习惯与兴趣领域。", insightEn: "Digital habits & interests.",
+                  followupZh: "它吸引你的点在哪？" }
+            ]
+        };
+
+        // 合并"全部"话题 (六大分类合并)
+        function getAllTopics() {
+            return [
+                ...TOPICS_DB.business,
+                ...TOPICS_DB.career,
+                ...TOPICS_DB.friendship,
+                ...TOPICS_DB.love,
+                ...TOPICS_DB.deep,
+                ...TOPICS_DB.daily
+            ];
+        }
+
+        let currentTopicsList = [];      // 当前展示的话题数组 (根据分类或全部)
+        let currentCategory = "all";     // 当前选中的分类键值 all / business ...
+        let currentTopicObj = null;
+        let spinning = false;
+        let animationId = null;
+        let currentRotation = 0;
+        const spinDuration = 1600;
+
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const size = 500;
+        canvas.width = size;
+        canvas.height = size;
+
+        // 极简黑白灰配色
+        const monoPalette = [
+            "#FFFFFF", "#F5F5F5", "#ECECEC", "#E2E2E2", "#D8D8D8",
+            "#CFCFCF", "#C5C5C5", "#BBBBBB", "#B0B0B0", "#FBFBFB",
+            "#F0F0F0", "#E6E6E6", "#DCDCDC", "#D2D2D2", "#C8C8C8"
+        ];
+        let segmentColors = [];
+
+        function updateSegmentColors() {
+            const len = currentTopicsList.length;
+            segmentColors = [];
+            for (let i = 0; i < len; i++) {
+                segmentColors.push(monoPalette[i % monoPalette.length]);
+            }
+        }
+
+        // 绘制转盘 (扇区显示话题简短中文)
+        function drawWheel() {
+            if (!ctx) return;
+            const count = currentTopicsList.length;
+            if (count === 0) return;
+            const angleStep = (Math.PI * 2) / count;
+            ctx.clearRect(0, 0, size, size);
+            const centerX = size/2, centerY = size/2;
+            const radius = size * 0.44;
+            const textRadius = radius * 0.70;
+            
+            for (let i = 0; i < count; i++) {
+                const start = i * angleStep + currentRotation;
+                const end = (i+1) * angleStep + currentRotation;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, start, end);
+                ctx.closePath();
+                ctx.fillStyle = segmentColors[i];
+                ctx.fill();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+                
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(start + angleStep/2);
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                let fontSize = Math.max(11, Math.min(15, 400 / count));
+                ctx.font = `500 ${fontSize}px "Inter", -apple-system, system-ui`;
+                ctx.fillStyle = "#1b1b1b";
+                let shortText = currentTopicsList[i].zh;
+                if (shortText.length > 10) shortText = shortText.slice(0, 9) + "..";
+                ctx.fillText(shortText, textRadius, 6);
+                ctx.font = `300 ${fontSize-3}px monospace`;
+                ctx.fillStyle = "#6e6e6e";
+                let engBrief = currentTopicsList[i].en.length > 12 ? currentTopicsList[i].en.slice(0,10)+"…" : currentTopicsList[i].en;
+                ctx.fillText(engBrief, textRadius, 24);
+                ctx.restore();
+            }
+            // 中心装饰
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius*0.09, 0, 2*Math.PI);
+            ctx.fillStyle = "#111";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius*0.04, 0, 2*Math.PI);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+        }
+
+        // 获取指针指向的话题索引
+        function getCurrentSectorIndex() {
+            const count = currentTopicsList.length;
+            if (count === 0) return 0;
+            const angleStep = (Math.PI * 2) / count;
+            const pointerAngle = -Math.PI / 2;
+            for (let i = 0; i < count; i++) {
+                let startRaw = i * angleStep + currentRotation;
+                let endRaw = (i+1) * angleStep + currentRotation;
+                let normStart = ((startRaw % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+                let normEnd = ((endRaw % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+                let normPointer = ((pointerAngle % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+                if (normStart < normEnd) {
+                    if (normPointer >= normStart && normPointer < normEnd) return i;
+                } else {
+                    if (normPointer >= normStart || normPointer < normEnd) return i;
+                }
+            }
+            return 0;
+        }
+
+        // 更新界面UI (分类徽章、话题内容等)
+        function updateUIByTopic(topic) {
+            if (!topic) return;
+            let catDisplay = "";
+            switch(currentCategory) {
+                case "business": catDisplay = "💼 商业 · BUSINESS"; break;
+                case "career": catDisplay = "📈 职场 · CAREER"; break;
+                case "friendship": catDisplay = "🤝 友情 · FRIENDSHIP"; break;
+                case "love": catDisplay = "❤️ 爱情 · LOVE"; break;
+                case "deep": catDisplay = "🌙 深度 · DEEP"; break;
+                case "daily": catDisplay = "☕ 日常 · DAILY"; break;
+                default: catDisplay = "✨ 全部话题 · ALL TOPICS";
+            }
+            document.getElementById('categoryLabel').innerHTML = catDisplay;
+            document.getElementById('currentTopicText').innerHTML = topic.zh;
+            document.getElementById('currentTopicEng').innerHTML = topic.en;
+            document.getElementById('insightText').innerHTML = `${topic.insightZh}<br><span style="font-size:0.73rem; color:#6a6a6a;">🔍 ${topic.insightEn || ""}</span>`;
+            document.getElementById('followupText').innerHTML = `💬 ${topic.followupZh}`;
+            document.getElementById('insightEngNote').innerHTML = `✨ Extended: ${topic.insightEn ? topic.insightEn.substring(0,70)+"…" : "keep exploring"} · 中英深谈`;
+        }
+
+        function setCurrentTopicByIndex(idx) {
+            if (currentTopicsList.length === 0) return;
+            const topic = currentTopicsList[idx];
+            if (topic) {
+                currentTopicObj = topic;
+                updateUIByTopic(topic);
+            }
+        }
+
+        // 转盘对齐到指定索引
+        function alignWheelToIndex(index) {
+            if (currentTopicsList.length === 0) return;
+            const count = currentTopicsList.length;
+            const angleStep = (Math.PI * 2) / count;
+            const targetSectorMid = index * angleStep + angleStep/2;
+            const pointerAngle = -Math.PI / 2;
+            let newRotation = pointerAngle - targetSectorMid;
+            newRotation = ((newRotation % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+            currentRotation = newRotation;
+            drawWheel();
+        }
+
+        // 随机重置当前分类话题
+        function resetRandomTopicInCategory() {
+            if (spinning) return;
+            if (currentTopicsList.length === 0) return;
+            const randIdx = Math.floor(Math.random() * currentTopicsList.length);
+            alignWheelToIndex(randIdx);
+            setCurrentTopicByIndex(randIdx);
+        }
+
+        // 动画旋转
+        function animateSpin(startRot, endRot, duration) {
+            const startTime = performance.now();
+            function step(now) {
+                const elapsed = now - startTime;
+                let t = Math.min(1, elapsed / duration);
+                const ease = 1 - Math.pow(1-t, 3);
+                const newRot = startRot + (endRot - startRot) * ease;
+                currentRotation = ((newRot % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+                drawWheel();
+                if (t < 1) {
+                    animationId = requestAnimationFrame(step);
+                } else {
+                    const finalIdx = getCurrentSectorIndex();
+                    setCurrentTopicByIndex(finalIdx);
+                    alignWheelToIndex(finalIdx);
+                    spinning = false;
+                    animationId = null;
+                }
+            }
+            if (animationId) cancelAnimationFrame(animationId);
+            animationId = requestAnimationFrame(step);
+        }
+
+        function spinWheel() {
+            if (spinning) return;
+            if (currentTopicsList.length === 0) return;
+            spinning = true;
+            const total = currentTopicsList.length;
+            const targetSector = Math.floor(Math.random() * total);
+            const angleStep = (Math.PI * 2) / total;
+            const pointerAngle = -Math.PI / 2;
+            const targetMidLocal = targetSector * angleStep + angleStep/2;
+            let targetRotationRaw = pointerAngle - targetMidLocal;
+            targetRotationRaw = ((targetRotationRaw % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+            let currentNorm = ((currentRotation % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+            let delta = targetRotationRaw - currentNorm;
+            const extraRounds = 4 + Math.floor(Math.random() * 8);
+            let totalDelta = delta + extraRounds * 2 * Math.PI;
+            const startRot = currentRotation;
+            const endRot = startRot + totalDelta;
+            animateSpin(startRot, endRot, spinDuration);
+        }
+
+        // 切换分类核心逻辑 (全部或单一分类)
+        function switchCategory(catKey) {
+            if (spinning) return;
+            currentCategory = catKey;
+            if (catKey === "all") {
+                currentTopicsList = getAllTopics();
+            } else {
+                currentTopicsList = TOPICS_DB[catKey] ? [...TOPICS_DB[catKey]] : getAllTopics();
+            }
+            if (currentTopicsList.length === 0) currentTopicsList = getAllTopics();
+            updateSegmentColors();
+            const randomIndex = Math.floor(Math.random() * currentTopicsList.length);
+            alignWheelToIndex(randomIndex);
+            setCurrentTopicByIndex(randomIndex);
+            drawWheel();
+        }
+
+        // 绑定筛选按钮 & 事件
+        function bindFilters() {
+            const btns = document.querySelectorAll('.filter-btn');
+            btns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const cat = btn.getAttribute('data-cat');
+                    if (!cat) return;
+                    btns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    switchCategory(cat);
+                });
+            });
+        }
+
+        function bindEvents() {
+            document.getElementById('spinBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                spinWheel();
+            });
+            document.getElementById('resetBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                if (spinning) return;
+                resetRandomTopicInCategory();
+            });
+            canvas.addEventListener('click', () => {
+                spinWheel();
+            });
+        }
+
+        // 初始化：默认为“全部话题”
+        function init() {
+            currentCategory = "all";
+            currentTopicsList = getAllTopics();
+            updateSegmentColors();
+            const initIdx = Math.floor(Math.random() * currentTopicsList.length);
+            alignWheelToIndex(initIdx);
+            setCurrentTopicByIndex(initIdx);
+            drawWheel();
+            bindFilters();
+            bindEvents();
+        }
+
+        init();
+    })();
+</script>
+</body>
+</html>
